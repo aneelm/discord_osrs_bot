@@ -1,4 +1,8 @@
-import time, discord, asyncio, random, pandas as pd
+import asyncio
+import discord
+import pandas as pd
+import random
+import time
 
 client = discord.Client()
 
@@ -81,39 +85,42 @@ async def check_pm_commmands(message):
         message_time = time.ctime(message_time)
         log_message_time = message_time.split(" ")
         log_file_name = log_message_time[1] + "_" + log_message_time[2] + "_" + log_message_time[4] + ".log"
-        if "enable trivia" == message.content:
+        message_content = message.content.lower()
+        if "enable trivia" == message_content:
             minus_trivia_enabled = True
             message_to_send = "Enabled -trivia"
             await message.channel.send("Enabled -trivia")
-        if "disable trivia" == message.content:
+        if "disable trivia" == message_content:
             message_to_send = "Disabled -trivia"
             minus_trivia_enabled = False
             await message.channel.send("Disabled -trivia")
-        if "start" == message.content:
+        if "start" == message_content:
             allowed = True
             message_to_send = "Bot is gonna ask for trivia."
             await message.channel.send("Bot is gonna ask for trivia.")
             await gang_shit_bot_channel.send('+trivia')
-        if "daily" == message.content:
+        if "daily" == message_content:
             message_to_send = "Bot is gonna ask for a daily."
             await message.channel.send(message_to_send)
             await gang_shit_bot_channel.send('+daily')
-        if "stop" == message.content:
+        if "stop" == message_content:
             allowed = False
             message_to_send = "Bot has stopped asking."
             await message.channel.send(message_to_send)
-        if "commands" == message.content:
-            message_to_send = commands
+        if "commands" == message_content:
             await message.channel.send(commands)
-            message_to_write_to_file = log_message_time[3] + " - " + message_to_send + "~"
+            message_to_write_to_file = log_message_time[3] + " - " + commands + "~"
             write_to_log(message_to_write_to_file, log_file_name)
             return
-        if "send=" in message.content:
+        if "send=" in message_content:
             split_message = message.content.split("=")
-            message_to_send = split_message[1]
-            await gang_shit_bot_channel.send(split_message[1])
+            if len(split_message) > 2:
+                message_to_send = split_message[1] + "=" + split_message[2]
+            else:
+                message_to_send = split_message[1]
+            await gang_shit_bot_channel.send(message_to_send)
         for value in monsters_to_kill.values():
-            if value == message.content:
+            if value == message_content:
                 message_to_send = "+m kill {0}".format(value.rstrip())
                 await gang_shit_bot_channel.send(message_to_send)
         if message_to_send == "":
@@ -124,15 +131,16 @@ async def check_pm_commmands(message):
 
 
 def write_to_log(message, write):
-    if message == "":
+    print(message)
+    if len(message.split("-")[1]) < 2:
         return
     lines = []
     try:
-        with open(write, "r") as o:
+        with open("Eelma_" + write, "r") as o:
             lines = o.readlines()
     except IOError:
         print("Creating new log file.")
-    with open(write, "w") as o:
+    with open("Eelma_" + write, "w") as o:
         lines = filter(lambda x: x.strip(), lines)
         o.write("".join(lines))
         o.write(message + "\n")
@@ -148,11 +156,24 @@ async def answer_message(message):
             log_message_time = message_time.split(" ")
             log_file_name = log_message_time[1] + "_" + log_message_time[2] + "_" + log_message_time[4] + ".log"
             message_to_send = ""
+            clue = False
+            tier = ""
             if "Diango asks..." in content:
                 content = content.split("Diango asks...** ")[1]
             if "**beepboop**" in content and "finished killing" in content:
+                if "ou got clue scrolls in your loot " in content:
+                    clue = True
+                    if "Elite" in content:
+                        tier = "elite"
+                    if "Hard" in content:
+                        tier = "hard"
+                    if "Medium" in content:
+                        tier = "medium"
+                    if "Easy" in content:
+                        tier = "easy"
                 time_split = log_message_time[3].split(":")
-                if 23 < int(time_split[0]) < 24 or 0 < int(time_split[0]) < 8:
+                print(time_split[0])
+                if 23 <= int(time_split[0]) < 24 or 0 <= int(time_split[0]) <= 8:
                     return
                 weighted = [320, 320, 320, 320, 320, 720, 720, 720, 1440, 2222]
                 random_time = random.randrange(10, weighted[random.randrange(0, 10)])
@@ -160,16 +181,22 @@ async def answer_message(message):
                 split_message = content.split(" ")
                 boss = split_message[-1].replace(".", " ").rstrip()
                 await asyncio.sleep(random_time)
-                if random_time < 120:
-                    message_to_send = "yes"
+                if clue:
+                    message_to_send = "+m clue 1 {0}".format(tier)
                     await message.channel.send(message_to_send)
                     message_to_write_to_file = log_message_time[3] + " - " + message_to_send + "~\n"
                     write_to_log(message_to_write_to_file, log_file_name)
                 else:
-                    message_to_send = "+m kill {0}".format(monsters_to_kill[boss])
-                    await message.channel.send(message_to_send)
-                    message_to_write_to_file = log_message_time[3] + " - " + message_to_send + "~\n"
-                    write_to_log(message_to_write_to_file, log_file_name)
+                    if random_time < 120:
+                        message_to_send = "yes"
+                        await message.channel.send(message_to_send)
+                        message_to_write_to_file = log_message_time[3] + " - " + message_to_send + "~\n"
+                        write_to_log(message_to_write_to_file, log_file_name)
+                    else:
+                        message_to_send = "+m kill {0}".format(monsters_to_kill[boss])
+                        await message.channel.send(message_to_send)
+                        message_to_write_to_file = log_message_time[3] + " - " + message_to_send + "~\n"
+                        write_to_log(message_to_write_to_file, log_file_name)
                 return
             for ignored in ignored_messages:
                 if ignored in content.lower():
