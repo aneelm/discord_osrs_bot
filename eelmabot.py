@@ -154,7 +154,10 @@ async def answer_message(message):
             content = message.content.replace(',', '').replace("'", '')
             message_time = time.ctime(time.time())
             log_message_time = message_time.split(" ")
+            if '' in log_message_time:
+                log_message_time.remove('')
             log_file_name = log_message_time[1] + "_" + log_message_time[2] + "_" + log_message_time[4] + ".log"
+            print(log_file_name)
             message_to_send = ""
             clue = False
             tier = ""
@@ -180,6 +183,7 @@ async def answer_message(message):
                 print("Waiting for {0} seconds".format(random_time))
                 split_message = content.split(" ")
                 boss = split_message[-1].replace(".", " ").rstrip()
+                #await asyncio.sleep(5)
                 await asyncio.sleep(random_time)
                 if clue:
                     message_to_send = "+m clue 1 {0}".format(tier)
