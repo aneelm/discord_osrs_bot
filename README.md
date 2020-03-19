@@ -6,6 +6,7 @@ In order for the bot to work, you need atleast 2 accounts.
 One which is the bot, and a second one which sends commands to the BOT and controls it.
 "BOT USER ID HERE" on line 250 requires the bot account token.
 bot=False if the "bot" account is not an official discord bot, bot=True if it is an official discord bot account.
+
 You also need to change the following id's to be correct.
 bot_speaking_channel_id = 0
 bot_controller_id = 0
