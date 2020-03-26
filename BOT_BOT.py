@@ -58,7 +58,8 @@ monsters_to_kill = {
     "Archaeologist": "crazy arch",
     "Dragon": "kbd",
     "Scorpia": "scorpia",
-    "Beast": "corp"
+    "Beast": "corp",
+    "Shaman": "shaman"
 }
 commands = ""
 for key, value in bot_commands.items():
@@ -114,6 +115,12 @@ async def check_pm_commmands(message):
             else:
                 message_to_send = split_message[1]
             await gang_shit_bot_channel.send(message_to_send)
+        if "quest" in message_content:
+            message_to_send = "+m quest"
+            await gang_shit_bot_channel.send(message_to_send)
+        if "stats" in message_content:
+            message_to_send = "+m stats"
+            await gang_shit_bot_channel.send(message_to_send)
         for value in monsters_to_kill.values():
             if value == message_content:
                 message_to_send = "+m kill {0}".format(value.rstrip())
@@ -131,7 +138,7 @@ def write_to_log(message, write):
         return
     lines = []
     try:
-        with open("Eelma_" + write, "r") as o:
+        with open("BOT_" + write, "r") as o:
             lines = o.readlines()
     except IOError:
         print("Creating new log file.")
@@ -153,10 +160,16 @@ async def answer_message(message):
             log_file_name = log_message_time[1] + "_" + log_message_time[2] + "_" + log_message_time[4] + ".log"
             message_to_send = ""
             clue = False
+            monster = False
+            quest = False
             tier = ""
             if "Diango asks..." in content:
                 content = content.split("Diango asks...** ")[1]
-            if "**beepboop**" in content and "finished killing" in content:
+            if "**beepboop**" in content and ("finished killing" in content or "finished questing" in content):
+                if "finished killing" in content:
+                    monster = True
+                elif "finished questing" in content:
+                    quest = True
                 if "ou got clue scrolls in your loot " in content:
                     clue = True
                     if "Elite" in content:
@@ -189,7 +202,10 @@ async def answer_message(message):
                         message_to_write_to_file = log_message_time[3] + " - " + message_to_send + "~\n"
                         write_to_log(message_to_write_to_file, log_file_name)
                     else:
-                        message_to_send = "+m kill {0}".format(monsters_to_kill[boss])
+                        if monster:
+                            message_to_send = "+m kill {0}".format(monsters_to_kill[boss])
+                        elif quest:
+                            message_to_send = "+m quest"
                         await message.channel.send(message_to_send)
                         message_to_write_to_file = log_message_time[3] + " - " + message_to_send + "~\n"
                         write_to_log(message_to_write_to_file, log_file_name)
@@ -243,8 +259,8 @@ def read_file_with_answers():
 
 
 oldschool_bot_id = 303730326692429825  # the bot that my bot replies to, DON'T CHANGE
-bot_speaking_channel_id = 0  # channel in which the bot is allowed to send it's commands and reply to trivia
-bot_controller_id = 0  # user id which controls the bot
-controller_bot_dm_channel_id = 0  # controller and bot DM channel id
+bot_speaking_channel_id = 0
+bot_controller_id = 0
+controller_bot_dm_channel_id = 0
 read_file_with_answers()
-client.run("BOT USER ID HERE", bot=False)
+client.run("BOT TOKEN HERE", bot=False)
