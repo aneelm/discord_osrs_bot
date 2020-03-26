@@ -12,4 +12,4 @@ bot_speaking_channel_id = 0
 bot_controller_id = 0
 controller_bot_dm_channel_id = 0
 
-The bot can answer all trivia questions (around 400) as of 19/03/2020. And can solve clues and kill minions on it's own.
+The bot can answer all trivia questions (348) as of 19/03/2020. And can solve clues and kill minions on it's own.
