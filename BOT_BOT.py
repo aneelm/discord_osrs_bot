@@ -139,9 +139,9 @@ async def answer_message(message):
             quest = False
             tier = ""
             time_split = message_time[3].split(":")
-            if "Diango asks..." in content:
-                content = content.split("Diango asks...** ")[1]
-            if "**beepboop**" in content and ("finished killing" in content or "finished questing" in content):
+            if "Diango asks" in content:
+                content = content.split("...** ")[1]
+            if minion_name in content and ("finished killing" in content or "finished questing" in content):
                 if "finished killing" in content:
                     monster = True
                 elif "finished questing" in content:
@@ -184,6 +184,7 @@ async def answer_message(message):
             if content in dictionary:
                 await asyncio.sleep(1)
                 await message.channel.send(dictionary[content])
+                print(content, dictionary[content])
             return
 
 
@@ -217,8 +218,9 @@ def read_file_with_answers():
 
 
 oldschool_bot_id = 303730326692429825  # the bot that my bot replies to, DON'T CHANGE
-bot_speaking_channel_id = 0
+bot_speaking_channel_id = 612985926993575936
 bot_controller_id = 0
 controller_bot_dm_channel_id = 0
+minion_name=""
 read_file_with_answers()
 client.run("", bot=False)
