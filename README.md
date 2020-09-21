@@ -1,3 +1,6 @@
+'<@384328624482025486>  <:minion:660517408968146946> **elroytjj** finished killing 30 Lizardman Shaman. Your Lizardman Shaman KC is now 4399.
+Say `p` to repeat this trip.'
+
 Bot that I made which replies to another bot in discord
 Usage:
 Install https://discordpy.readthedocs.io/en/latest/

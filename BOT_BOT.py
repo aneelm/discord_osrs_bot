@@ -1,4 +1,6 @@
 import asyncio
+import configparser
+
 import discord
 import pandas as pd
 import random
@@ -65,19 +67,25 @@ commands = ""
 for key, value in bot_commands.items():
     commands += "Command: \"" + key + "\" " + "Explanation: \"" + value + "\".\n"
 
+currently_running_command = "+m k vetion"
+
 
 @client.event
-async def on_ready():
+async def on_connect():
     print('We have logged in as {0.user}'.format(client))
+    channel = client.get_channel(bot_speaking_channel_id)
+    await channel.send(currently_running_command)
 
 
 @client.event
 async def check_pm_commmands(message):
-    global allowed, minus_trivia_enabled, commands
+    global allowed, minus_trivia_enabled, commands, currently_running_command
     gang_shit_bot_channel = client.get_channel(bot_speaking_channel_id)
     if message.author.id == bot_controller_id:
         message_to_send = ""
         message_content = message.content.lower()
+        if "bso" in message_content:
+            return
         if "enable trivia" == message_content:
             minus_trivia_enabled = True
             message_to_send = "Enabled -trivia"
@@ -118,6 +126,7 @@ async def check_pm_commmands(message):
         for value in monsters_to_kill.values():
             if value == message_content:
                 message_to_send = "+m kill {0}".format(value.rstrip())
+                currently_running_command = message_to_send
                 await gang_shit_bot_channel.send(message_to_send)
         if message_to_send == "":
             return
@@ -126,7 +135,7 @@ async def check_pm_commmands(message):
 
 @client.event
 async def answer_message(message):
-    global allowed, ignored_messages
+    global allowed, ignored_messages, currently_running_command
     if message.channel.id == bot_speaking_channel_id:
         if message.author.id == oldschool_bot_id:
             content = message.content.replace(',', '').replace("'", '')
@@ -137,15 +146,20 @@ async def answer_message(message):
             clue = False
             monster = False
             quest = False
+            prev_was_clue = False
             tier = ""
             time_split = message_time[3].split(":")
             if "Diango asks" in content:
                 content = content.split("...** ")[1]
-            if minion_name in content and ("finished killing" in content or "finished questing" in content):
+            if minion_name in content and ("finished killing" in content
+                                           or "finished questing" in content
+                                           or "carefully places the reward casket in your bank." in content):
                 if "finished killing" in content:
                     monster = True
                 elif "finished questing" in content:
                     quest = True
+                elif "carefully places the reward casket in your bank." in content:
+                    prev_was_clue = True
                 if "ou got clue scrolls in your loot " in content:
                     clue = True
                     if "Elite" in content:
@@ -162,20 +176,23 @@ async def answer_message(message):
                 random_time = random.randrange(10, weighted[random.randrange(0, 10)])
                 print("Waiting for {0} seconds".format(random_time))
                 split_message = content.split(" ")
-                boss = split_message[-1].replace(".", " ").rstrip()
                 await asyncio.sleep(random_time)
                 if clue:
                     message_to_send = "+m clue 1 {0}".format(tier)
                     await message.channel.send(message_to_send)
                 else:
-                    if random_time < 120:
-                        message_to_send = "yes"
+                    if prev_was_clue:
+                        message_to_send = currently_running_command
+                        await message.channel.send(message_to_send)
+                    elif random_time < 120:
+                        message_to_send = message.content.split("Say `")[1][0]
                         await message.channel.send(message_to_send)
                     else:
                         if monster:
-                            message_to_send = "+m kill {0}".format(monsters_to_kill[boss])
+                            message_to_send = currently_running_command
                         elif quest:
                             message_to_send = "+m quest"
+                        currently_running_command = message_to_send
                         await message.channel.send(message_to_send)
                 return
             for ignored in ignored_messages:
@@ -217,10 +234,17 @@ def read_file_with_answers():
         dictionary[question] = answer
 
 
-oldschool_bot_id = 303730326692429825  # the bot that my bot replies to, DON'T CHANGE
-bot_speaking_channel_id = 612985926993575936
-bot_controller_id = 0
-controller_bot_dm_channel_id = 0
-minion_name=""
 read_file_with_answers()
-client.run("", bot=False)
+
+config = configparser.ConfigParser()
+config.read("bot_config.txt")
+
+
+oldschool_bot_id = config['DEFAULT']['oldschool_bot_id']  # the bot that my bot replies to, DON'T CHANGE
+bot_speaking_channel_id = config['DEFAULT']['bot_speaking_channel_id']  # My server bot channel
+
+minion_name = config['ALT_ACCOUNT']['minion_name']
+bot_controller_id = config['ALT_ACCOUNT']['bot_controller_id']
+controller_bot_dm_channel_id = config['ALT_ACCOUNT']['controller_bot_dm_channel_id']
+
+client.run(config['ALT_ACCOUNT']['client_id'], bot=False)
