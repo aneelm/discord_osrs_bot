@@ -21,6 +21,7 @@ class EventEndMessageEnum(Enum):
     RC = "finished crafting rune"
     AGILITY = "finished laps and fell"
     CLUE = "you got clue scrolls in your loot"
+    FISHING = "finished fishing"
 
 
 client = discord.Client()
@@ -99,12 +100,29 @@ def determine_message_to_send(event, content, time_to_await) -> str:
         elif EventEndMessageEnum.NIGHTMARE == event:
             print("Killing nightmare.")
             message_to_send = "+nightmare solo"
+        elif EventEndMessageEnum.FISHING == event:
+            # Example:
+            # fish_with_amount = 280 salmon
+            # fish = salmon
+            fish_with_amount = re.search("(?<=finished fishing )(.*)(?= you also received)", content).group(1)
+            fish = fish_with_amount.split()[1]
+            message_to_send = "+fish {}".format(fish)
         elif EventEndMessageEnum.AGILITY == event:
-            # TODO:
-            pass
+            # Example:
+            # course_with_amount = 40 canifis Rooftop Course
+            # course = canifis
+            course_with_amount = re.search("(?<=finished )(.*)(?= laps and fell on)", content).group(1)
+            course = course_with_amount.split()[1]
+            if course == "al":
+                course = "al kharid"
+            message_to_send = "+laps {}".format(course)
         elif EventEndMessageEnum.WOODCUTTING == event:
-            # TODO:
-            pass
+            # Example:
+            # log_with_amount = 60 yew log
+            # log = yew
+            log_with_amount = re.search("(?<=finished woodcutting )(.*)(?= you also received)", content).group(1)
+            log = log_with_amount.split()[1]
+            message_to_send = "+chop {}".format(log)
         elif EventEndMessageEnum.MINING == event:
             # Example:
             # ore_with_amount = 512 iron ore
@@ -112,13 +130,22 @@ def determine_message_to_send(event, content, time_to_await) -> str:
             ore_with_amount = re.search("(?<=finished mining )(.*)(?= you also received)", content).group(1)
             ore = ore_with_amount.split()[1]
             message_to_send = "+mine {}".format(ore)
-            pass
         elif EventEndMessageEnum.COOKING == event:
-            # TODO:
-            pass
+            # Example:
+            # food_with_amount = 60 shark
+            # food = shark
+            food_with_amount = re.search("(?<=finished cooking )(.*)(?= you also received)", content).group(1)
+            food = food_with_amount.split()[1]
+            if food == "jug":
+                food = "wine"
+            message_to_send = "+cook {}".format(food)
         elif EventEndMessageEnum.RC == event:
-            # TODO:
-            pass
+            # Example:
+            # rune_with_amount = 3996 astral
+            # rune = astral
+            rune_with_amount = re.search("(?<=finished crafting )(.*)(?= rune you also received)", content).group(1)
+            rune = rune_with_amount.split()[1]
+            message_to_send = "+rc {}".format(rune)
         elif EventEndMessageEnum.SMITHING == event:
             # Example:
             # bar_with_amount = 20x gold bar
@@ -126,7 +153,6 @@ def determine_message_to_send(event, content, time_to_await) -> str:
             bar_with_amount = re.search("(?<=smelting )(.*)(?= you also received)", content).group(1)
             bar = bar_with_amount.split()[1].lower()
             message_to_send = "+smelt {}".format(bar)
-            pass
         elif EventEndMessageEnum.QUEST == event:
             print("Questing.")
             message_to_send = "+m quest"
@@ -142,7 +168,7 @@ def determine_message_to_send(event, content, time_to_await) -> str:
             print("Completing {} clue".format(tier_in_message))
         if overwrite_prev_command:
             config[ACCOUNT]['currentCommand'] = message_to_send
-            with open('example.cfg', 'w') as configfile:
+            with open('bot_config.cfg', 'w') as configfile:
                 config.write(configfile)
         return message_to_send
     except AttributeError:
@@ -181,6 +207,7 @@ async def on_message(message):
                 if message_to_send:
                     print("Waiting for {0} seconds".format(time_to_await))
                     await asyncio.sleep(time_to_await)
+                    print(message_to_send)
                     await message.channel.send(message_to_send)
 
 
