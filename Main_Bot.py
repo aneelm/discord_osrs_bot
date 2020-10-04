@@ -6,6 +6,8 @@ import configparser
 import re
 from enum import Enum
 
+ACCOUNT = 'MAIN_ACCOUNT'
+
 
 class EventEndMessageEnum(Enum):
     NIGHTMARE = "died in all their attempts to kill the nightmare"
@@ -15,6 +17,7 @@ class EventEndMessageEnum(Enum):
     MINING = "finished mining"
     COOKING = "finished cooking"
     WOODCUTTING = "finished woodcutting"
+    SMITHING = "finished smelting"
     RC = "finished crafting rune"
     AGILITY = "finished laps and fell"
     CLUE = "you got clue scrolls in your loot"
@@ -29,7 +32,7 @@ asleep = False
 async def on_connect():
     print('We have logged in as {0.user}'.format(client))
     channel = client.get_channel(bot_speaking_channel_id)
-    await channel.send(config['MAIN_ACCOUNT']['currentCommand'])
+    await channel.send(config[ACCOUNT]['currentCommand'])
 
 
 async def can_send_messages(time_split) -> bool:
@@ -44,7 +47,7 @@ async def can_send_messages(time_split) -> bool:
         if int(time_split[0]) >= 8:
             asleep = False
             channel = client.get_channel(bot_speaking_channel_id)
-            await channel.send(config['MAIN_ACCOUNT']['currentCommand'])
+            await channel.send(config[ACCOUNT]['currentCommand'])
     return True
 
 
@@ -72,59 +75,83 @@ def determine_message_to_send(event, content, time_to_await) -> str:
         EventEndMessageEnum.CLUE,
         EventEndMessageEnum.PREV_WAS_CLUE
     ]
-    overwrite_prev_command = True
-    if time_to_await < 115 and event not in events_that_can_not_be_repeated_by_char:
-        overwrite_prev_command = False
-        message_to_send = re.search("(?<=say `)(.*)(?=` to repeat this trip)", content).group(1)
-    elif EventEndMessageEnum.MONSTER == event:
-        npc_in_message = re.search("(?<=your )(.*)(?= kc)", content).group(1)
-        try:
-            npc_to_say = config['MONSTERS'][npc_in_message]
-            print("Killing {}.".format(npc_to_say))
-        except KeyError:
-            print("{} was not found in {} config.".format(npc_in_message, "MONSTERS"))
-            npc_to_say = config['MAIN_ACCOUNT']['defaultNPC']
-            print("Defaulting to {}.".format(npc_to_say))
-        if npc_in_message == "nightmare":
+    try:
+        if event is None:
+            print(content)
+            return ""
+        overwrite_prev_command = True
+        if time_to_await < 115 and event not in events_that_can_not_be_repeated_by_char:
+            overwrite_prev_command = False
+            message_to_send = re.search("(?<=say `)(.*)(?=` to repeat this trip)", content).group(1)
+        elif EventEndMessageEnum.MONSTER == event:
+            npc_in_message = re.search("(?<=your )(.*)(?= kc)", content).group(1)
+            try:
+                npc_to_say = config['MONSTERS'][npc_in_message]
+                print("Killing {}.".format(npc_to_say))
+            except KeyError:
+                print("{} was not found in {} config.".format(npc_in_message, "MONSTERS"))
+                npc_to_say = config[ACCOUNT]['defaultNPC']
+                print("Defaulting to {}.".format(npc_to_say))
+            if npc_in_message == "nightmare":
+                message_to_send = "+nightmare solo"
+            else:
+                message_to_send = "+m kill {}".format(npc_to_say)
+        elif EventEndMessageEnum.NIGHTMARE == event:
+            print("Killing nightmare.")
             message_to_send = "+nightmare solo"
-        else:
-            message_to_send = "+m kill {}".format(npc_to_say)
-    elif EventEndMessageEnum.NIGHTMARE == event:
-        print("Killing nightmare.")
-        message_to_send = "+nightmare solo"
-    elif EventEndMessageEnum.AGILITY == event:
-        # TODO:
-        pass
-    elif EventEndMessageEnum.WOODCUTTING == event:
-        # TODO:
-        pass
-    elif EventEndMessageEnum.MINING == event:
-        # TODO:
-        pass
-    elif EventEndMessageEnum.COOKING == event:
-        # TODO:
-        pass
-    elif EventEndMessageEnum.RC == event:
-        # TODO:
-        pass
-    elif EventEndMessageEnum.QUEST == event:
-        print("Questing.")
-        message_to_send = "+m quest"
-    elif EventEndMessageEnum.PREV_WAS_CLUE == event:
-        print("Repeating last event after completing a clue.")
-        overwrite_prev_command = False
-        message_to_send = config['MAIN_ACCOUNT']['currentCommand']
-        pass
-    elif EventEndMessageEnum.CLUE == event:
-        overwrite_prev_command = False
-        tier_in_message = re.search("(?<=you got clue scrolls in your loot \\()(.*)(?=\\)\\.)", content).group(1)
-        message_to_send = "+m clue 1 {}".format(tier_in_message)
-        print("Completing {} clue".format(tier_in_message))
-    if overwrite_prev_command:
-        config['MAIN_ACCOUNT']['currentCommand'] = message_to_send
-        with open('example.cfg', 'w') as configfile:
-            config.write(configfile)
-    return message_to_send
+        elif EventEndMessageEnum.AGILITY == event:
+            # TODO:
+            pass
+        elif EventEndMessageEnum.WOODCUTTING == event:
+            # TODO:
+            pass
+        elif EventEndMessageEnum.MINING == event:
+            # Example:
+            # ore_with_amount = 512 iron ore
+            # ore = iron
+            ore_with_amount = re.search("(?<=finished mining )(.*)(?= you also received)", content).group(1)
+            ore = ore_with_amount.split()[1]
+            message_to_send = "+mine {}".format(ore)
+            pass
+        elif EventEndMessageEnum.COOKING == event:
+            # TODO:
+            pass
+        elif EventEndMessageEnum.RC == event:
+            # TODO:
+            pass
+        elif EventEndMessageEnum.SMITHING == event:
+            # Example:
+            # bar_with_amount = 20x gold bar
+            # bar = gold
+            bar_with_amount = re.search("(?<=smelting )(.*)(?= you also received)", content).group(1)
+            bar = bar_with_amount.split()[1].lower()
+            message_to_send = "+smelt {}".format(bar)
+            pass
+        elif EventEndMessageEnum.QUEST == event:
+            print("Questing.")
+            message_to_send = "+m quest"
+        elif EventEndMessageEnum.PREV_WAS_CLUE == event:
+            print("Repeating last event after completing a clue.")
+            overwrite_prev_command = False
+            message_to_send = config[ACCOUNT]['currentCommand']
+            pass
+        elif EventEndMessageEnum.CLUE == event:
+            overwrite_prev_command = False
+            tier_in_message = re.search("(?<=you got clue scrolls in your loot \\()(.*)(?=\\)\\.)", content).group(1)
+            message_to_send = "+m clue 1 {}".format(tier_in_message)
+            print("Completing {} clue".format(tier_in_message))
+        if overwrite_prev_command:
+            config[ACCOUNT]['currentCommand'] = message_to_send
+            with open('example.cfg', 'w') as configfile:
+                config.write(configfile)
+        return message_to_send
+    except AttributeError:
+        print("----------------ERROR------------------")
+        print(event)
+        print(content)
+        print(time_to_await)
+        print("----------------ERROR------------------")
+        return ""
 
 
 def determine_wait_time():
@@ -162,5 +189,5 @@ config.read("bot_config.cfg")
 
 oldschool_bot_id = int(config['DEFAULT']['oldschool_bot_id'])  # the bot that my bot replies to, DON'T CHANGE
 bot_speaking_channel_id = int(config['DEFAULT']['bot_speaking_channel_id'])  # My server bot channel
-minion_name = config['MAIN_ACCOUNT']['minion_name']
-client.run(config['MAIN_ACCOUNT']['client_id'], bot=False)
+minion_name = config[ACCOUNT]['minion_name']
+client.run(config[ACCOUNT]['client_id'], bot=False)
